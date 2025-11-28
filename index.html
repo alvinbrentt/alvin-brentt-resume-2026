@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alvin Brentt Crispian Raymundo - Terminal Portfolio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Custom Scrollbar */
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background-color: #374151;
+            border-radius: 20px;
+        }
+
+        .animate-fadeIn {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .cursor-blink {
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-950 text-gray-200 p-2 md:p-8 flex flex-col items-center justify-center selection:bg-green-900 selection:text-green-100 overflow-hidden">
+
+    <!-- Terminal Container -->
+    <div id="terminal-window" class="w-full max-w-4xl h-[85vh] bg-black/90 rounded-lg shadow-2xl border border-gray-800 overflow-hidden flex flex-col relative transition-all duration-300 ease-in-out">
+        
+        <!-- Title Bar -->
+        <div class="bg-gray-900 px-4 py-2 flex items-center justify-between border-b border-gray-800 shrink-0">
+            <div class="flex items-center gap-2">
+                <div class="flex gap-1.5">
+                    <div class="w-3 h-3 rounded-full bg-red-500/80 hover:bg-red-500 cursor-pointer"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-500/80 hover:bg-yellow-500 cursor-pointer"></div>
+                    <div class="w-3 h-3 rounded-full bg-green-500/80 hover:bg-green-500 cursor-pointer"></div>
+                </div>
+                <div class="ml-3 text-xs text-gray-400 flex items-center gap-1.5">
+                    <i data-lucide="terminal" class="w-3 h-3"></i>
+                    <span>alvin@raymundo: ~</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 text-gray-500">
+                <button id="maximize-btn" class="hover:text-gray-300 focus:outline-none">
+                    <i data-lucide="maximize-2" class="w-3.5 h-3.5" id="maximize-icon"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Terminal Output Area -->
+        <div id="terminal-output" class="flex-1 p-4 md:p-6 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent cursor-text">
+            <!-- Content will be injected here via JS -->
+            <div id="output-content"></div>
+
+            <!-- Active Input Line -->
+            <div class="flex items-center flex-wrap mt-2">
+                <div class="flex items-center text-sm md:text-base flex-wrap mr-2">
+                    <span class="text-green-400 font-bold">guest@alvin.dev</span>
+                    <span class="text-white mx-1">:</span>
+                    <span class="text-blue-400 font-bold">~</span>
+                    <span class="text-white mx-1">$</span>
+                </div>
+                <div class="flex-1 relative group">
+                    <input type="text" id="command-input" class="bg-transparent border-none outline-none text-gray-100 w-full font-mono caret-transparent p-0 m-0" autocomplete="off" autofocus>
+                    <!-- Custom Blinking Cursor -->
+                    <span id="custom-cursor" class="absolute pointer-events-none bg-green-500 w-2.5 h-5 top-0 left-0 cursor-blink"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions Bar -->
+        <div class="bg-gray-900/95 border-t border-gray-800 p-2 md:p-3 shrink-0">
+            <div class="flex items-center gap-2 mb-2 text-xs text-gray-500 px-1">
+                <i data-lucide="command" class="w-3 h-3"></i>
+                <span>QUICK ACTIONS</span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="handleCommand('about')" class="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-xs md:text-sm text-green-400 font-mono transition-all active:scale-95">
+                    <i data-lucide="user" class="w-3.5 h-3.5"></i> About
+                </button>
+                <button onclick="handleCommand('work')" class="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-xs md:text-sm text-green-400 font-mono transition-all active:scale-95">
+                    <i data-lucide="briefcase" class="w-3.5 h-3.5"></i> Work
+                </button>
+                <button onclick="handleCommand('skills')" class="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-xs md:text-sm text-green-400 font-mono transition-all active:scale-95">
+                    <i data-lucide="code" class="w-3.5 h-3.5"></i> Skills
+                </button>
+                <button onclick="handleCommand('contact')" class="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-xs md:text-sm text-green-400 font-mono transition-all active:scale-95">
+                    <i data-lucide="mail" class="w-3.5 h-3.5"></i> Contact
+                </button>
+                <button onclick="handleCommand('clear')" class="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-xs md:text-sm text-green-400 font-mono transition-all active:scale-95">
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i> Clear
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="mt-4 text-xs text-gray-600 font-mono hidden md:block">
+        Press [TAB] to autocomplete • Type 'help' for commands
+    </div>
+
+    <script>
+        // --- Data ---
+        const RESUME_DATA = {
+            header: {
+                name: "Alvin Brentt Crispian Raymundo",
+                title: "General Virtual Assistant / Automation Expert",
+                contact: {
+                    phone: "+63 929 439 7793",
+                    email: "alvinraymundo011@gmail.com",
+                    location: "Mandaluyong City, Philippines"
+                },
+                summary: "Highly technical Virtual Assistant specializing in process automation. I build custom solutions using Python and maximize platform efficiency across WordPress and Shopify. With over 5 years of Tier III tech expertise, I solve complex problems with minimal supervision."
+            },
+            experience: [
+                {
+                    company: "KMC Solutions (StarHub SG)",
+                    role: "Social Media Specialist / Chat Support Specialist",
+                    period: "Feb 2024 - April 2025",
+                    location: "Taguig, Philippines",
+                    details: [
+                        "Managed high-volume virtual communication for StarHub SG.",
+                        "Handled critical VA tasks: service plan inquiries, device support, and billing explanations.",
+                        "Troubleshot technical and account-related issues with high precision."
+                    ]
+                },
+                {
+                    company: "Telus International Philippines",
+                    role: "Tier III - Tech Support (G Suite Specialist)",
+                    period: "May 2018 - Aug 2022",
+                    location: "Taguig, Philippines",
+                    details: [
+                        "Provided advanced virtual support for Google Workspace (G Suite).",
+                        "Managed account setup, domain verification, and intricate spam management.",
+                        "Performed quality evaluation of offshore interactions."
+                    ]
+                },
+                {
+                    company: "Trafilea",
+                    role: "Social Media Moderator / E-commerce Support",
+                    period: "March 2018 - May 2018",
+                    location: "Guatemala (Remote)",
+                    details: [
+                        "Digital frontline for customer engagement on social media.",
+                        "Contributed to sales funnel by providing product info leading to direct sales.",
+                        "Generated administrative analysis reports to inform strategic decisions."
+                    ]
+                },
+                {
+                    company: "Teletech Holdings Inc.",
+                    role: "Chat Support Associate / Frontline Support",
+                    period: "July 2014 - Dec 2017",
+                    location: "Mandaluyong, Philippines",
+                    details: [
+                        "Frontline virtual assistant for a leading US Telecom company.",
+                        "Handled network, device, and system troubleshooting.",
+                        "Managed billing, account activation, and customer retention."
+                    ]
+                }
+            ],
+            skills: {
+                technical: ["Python Automation", "WordPress Management", "Shopify", "cPanel/Plesk", "DNS/MX Records"],
+                administrative: ["G Suite/Workspace Specialist", "SEO Optimization", "Quality Assurance (QA)", "Editorial Review", "Process Automation"]
+            }
+        };
+
+        // --- Logic ---
+        const inputEl = document.getElementById('command-input');
+        const outputEl = document.getElementById('output-content');
+        const terminalOutput = document.getElementById('terminal-output');
+        const customCursor = document.getElementById('custom-cursor');
+        const terminalWindow = document.getElementById('terminal-window');
+        const maximizeBtn = document.getElementById('maximize-btn');
+        const maximizeIcon = document.getElementById('maximize-icon');
+
+        let isMaximized = false;
+
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Focus management
+        terminalOutput.addEventListener('click', () => inputEl.focus());
+
+        // Cursor logic
+        function updateCursor() {
+            const val = inputEl.value;
+            // Approximate width of a character in monospace font (ch unit is handy in CSS)
+            // But doing it via JS style left allows dynamic updates
+            customCursor.style.left = `${val.length}ch`;
+        }
+
+        inputEl.addEventListener('input', updateCursor);
+        
+        // Command Handling
+        inputEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const cmd = inputEl.value;
+                handleCommand(cmd);
+                inputEl.value = '';
+                updateCursor();
+            } else if (e.key === 'Tab') {
+                e.preventDefault();
+                const commands = ['help', 'about', 'work', 'skills', 'contact', 'clear', 'all'];
+                const match = commands.find(c => c.startsWith(inputEl.value.toLowerCase()));
+                if (match) {
+                    inputEl.value = match;
+                    updateCursor();
+                }
+            }
+        });
+
+        // Maximize Toggle
+        maximizeBtn.addEventListener('click', () => {
+            isMaximized = !isMaximized;
+            if (isMaximized) {
+                terminalWindow.classList.remove('max-w-4xl', 'h-[85vh]', 'rounded-lg');
+                terminalWindow.classList.add('fixed', 'inset-0', 'z-50', 'rounded-none', 'h-screen');
+                maximizeIcon.setAttribute('data-lucide', 'minimize-2');
+            } else {
+                terminalWindow.classList.add('max-w-4xl', 'h-[85vh]', 'rounded-lg');
+                terminalWindow.classList.remove('fixed', 'inset-0', 'z-50', 'rounded-none', 'h-screen');
+                maximizeIcon.setAttribute('data-lucide', 'maximize-2');
+            }
+            lucide.createIcons();
+        });
+
+        function createPromptHTML(cmd) {
+            return `
+                <div class="mb-1">
+                    <div class="flex items-center text-sm md:text-base flex-wrap">
+                        <span class="text-green-400 font-bold">guest@alvin.dev</span>
+                        <span class="text-white mx-1">:</span>
+                        <span class="text-blue-400 font-bold">~</span>
+                        <span class="text-white mx-1">$</span>
+                        <span class="ml-2 text-gray-100">${cmd}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createSectionBlock(title, contentHTML) {
+            return `
+                <div class="mb-6 animate-fadeIn">
+                    <h3 class="text-yellow-400 font-bold text-lg mb-2 border-b border-gray-700 pb-1 w-full md:w-fit uppercase tracking-wider">
+                        ${title}
+                    </h3>
+                    <div class="text-gray-300 space-y-2">
+                        ${contentHTML}
+                    </div>
+                </div>
+            `;
+        }
+
+        function handleCommand(cmdText) {
+            const trimmedCmd = cmdText.trim().toLowerCase();
+            
+            // Add command line to output (except banner which is initial)
+            if (trimmedCmd !== 'banner' && trimmedCmd !== 'init_load') {
+                const promptDiv = document.createElement('div');
+                promptDiv.innerHTML = createPromptHTML(cmdText);
+                outputEl.appendChild(promptDiv);
+            }
+
+            let responseHTML = '';
+
+            switch (trimmedCmd) {
+                case 'init_load':
+                    // Just run banner and help silently
+                    handleCommand('banner');
+                    handleCommand('help');
+                    return;
+
+                case 'help':
+                    responseHTML = `
+                        <div class="my-2 animate-fadeIn">
+                            <div class="text-gray-300 mb-2">Available commands:</div>
+                            <div class="grid grid-cols-1 gap-1">
+                                <div class="flex flex-col md:flex-row md:items-center"><span class="text-yellow-300 font-bold w-32">about</span><span class="text-gray-400">Who am I? Summary & Contact</span></div>
+                                <div class="flex flex-col md:flex-row md:items-center"><span class="text-yellow-300 font-bold w-32">work</span><span class="text-gray-400">Professional Experience</span></div>
+                                <div class="flex flex-col md:flex-row md:items-center"><span class="text-yellow-300 font-bold w-32">skills</span><span class="text-gray-400">Technical & Admin Skills</span></div>
+                                <div class="flex flex-col md:flex-row md:items-center"><span class="text-yellow-300 font-bold w-32">contact</span><span class="text-gray-400">Get in touch</span></div>
+                                <div class="flex flex-col md:flex-row md:items-center"><span class="text-yellow-300 font-bold w-32">all</span><span class="text-gray-400">Display full resume</span></div>
+                                <div class="flex flex-col md:flex-row md:items-center"><span class="text-yellow-300 font-bold w-32">clear</span><span class="text-gray-400">Clear the terminal</span></div>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'banner':
+                    responseHTML = `
+                        <div class="mb-4 leading-none text-[10px] md:text-xs text-green-500 font-mono whitespace-pre overflow-x-hidden animate-fadeIn">
+    ___    __       _       
+   /   |  / /_   __(_)___  
+  / /| | / /| | / / / __ \\ 
+ / ___ |/ / | |/ / / / / / 
+/_/  |_/_/  |___/_/_/ /_/  
+                           
+Automated Solutions & Virtual Assistance v2.5.0
+                        </div>
+                    `;
+                    break;
+
+                case 'about':
+                case 'summary':
+                    responseHTML = createSectionBlock("Summary", `<p class="leading-relaxed">${RESUME_DATA.header.summary}</p>`);
+                    break;
+
+                case 'work':
+                case 'experience':
+                    const workHTML = RESUME_DATA.experience.map(job => `
+                        <div class="mb-6 last:mb-0">
+                            <div class="flex flex-col md:flex-row md:justify-between md:items-baseline text-green-300">
+                                <span class="font-bold text-base">${job.role}</span>
+                                <span class="text-sm text-gray-500 italic">${job.period}</span>
+                            </div>
+                            <div class="text-blue-300 text-sm mb-2">${job.company} — ${job.location}</div>
+                            <ul class="list-disc list-outside ml-4 text-gray-300 space-y-1">
+                                ${job.details.map(d => `<li>${d}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `).join('');
+                    responseHTML = createSectionBlock("Work Experience", workHTML);
+                    break;
+
+                case 'skills':
+                    const skillsHTML = `
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <h4 class="text-green-400 font-bold mb-2 flex items-center gap-2">
+                                    <i data-lucide="code" class="w-4 h-4"></i> Development & Infra
+                                </h4>
+                                <ul class="list-disc ml-4 text-gray-300">
+                                    ${RESUME_DATA.skills.technical.map(s => `<li>${s}</li>`).join('')}
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="text-green-400 font-bold mb-2 flex items-center gap-2">
+                                    <i data-lucide="shield" class="w-4 h-4"></i> Admin & Quality
+                                </h4>
+                                <ul class="list-disc ml-4 text-gray-300">
+                                    ${RESUME_DATA.skills.administrative.map(s => `<li>${s}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                    `;
+                    responseHTML = createSectionBlock("Technical Proficiency", skillsHTML);
+                    break;
+
+                case 'contact':
+                    responseHTML = createSectionBlock("Contact Information", `
+                        <div class="flex flex-col gap-2">
+                            <a href="mailto:${RESUME_DATA.header.contact.email}" class="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors w-fit">
+                                <i data-lucide="mail" class="w-4 h-4"></i> ${RESUME_DATA.header.contact.email}
+                            </a>
+                            <span class="flex items-center gap-2 text-gray-300">
+                                <i data-lucide="briefcase" class="w-4 h-4"></i> ${RESUME_DATA.header.contact.phone}
+                            </span>
+                        </div>
+                    `);
+                    break;
+                
+                case 'all':
+                    handleCommand('about');
+                    handleCommand('skills');
+                    handleCommand('work');
+                    handleCommand('contact');
+                    return;
+
+                case 'clear':
+                    outputEl.innerHTML = '';
+                    return;
+
+                case 'sudo':
+                    responseHTML = `<div class="text-red-500 font-bold mb-2 animate-fadeIn">Permission denied: You are not an administrator. Nice try.</div>`;
+                    break;
+                
+                case 'ls':
+                    responseHTML = `
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-blue-300 mb-2 animate-fadeIn">
+                            <span>resume.pdf</span>
+                            <span>secrets.txt</span>
+                            <span>portfolio_v1/</span>
+                            <span>automation_scripts/</span>
+                        </div>
+                    `;
+                    break;
+
+                case '':
+                    break;
+
+                default:
+                    responseHTML = `
+                        <div class="text-red-400 mb-2 animate-fadeIn">
+                            Command not found: '${trimmedCmd}'. Type <span class="text-yellow-300 cursor-pointer underline" onclick="handleCommand('help')">help</span> for a list of commands.
+                        </div>
+                    `;
+            }
+
+            if (responseHTML) {
+                const responseDiv = document.createElement('div');
+                responseDiv.innerHTML = responseHTML;
+                outputEl.appendChild(responseDiv);
+                
+                // Re-initialize icons for new content
+                lucide.createIcons();
+            }
+
+            // Scroll to bottom
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        }
+
+        // Initialize
+        window.onload = () => {
+            handleCommand('init_load');
+        };
+
+    </script>
+</body>
+</html>

@@ -7,22 +7,68 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap');
+        /* Import a blocky, retro terminal font */
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
         
         body {
-            font-family: 'Fira Code', monospace;
+            font-family: 'VT323', monospace;
+            background-color: #000;
+            color: #fbbf24; /* Amber-400 base color */
+            overflow: hidden; /* Prevent body scroll, handle in terminal-output */
+        }
+
+        /* CRT Text Glow */
+        .crt-text {
+            text-shadow: 0 0 2px #b45309, 0 0 5px #fbbf24;
+        }
+
+        /* CRT Scanline Effect */
+        .scanlines {
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.3) 50%,
+                rgba(0,0,0,0.3)
+            );
+            background-size: 100% 4px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        /* Screen Flicker Animation (Subtle) */
+        @keyframes flicker {
+            0% { opacity: 0.97; }
+            5% { opacity: 0.95; }
+            10% { opacity: 0.9; }
+            15% { opacity: 0.95; }
+            20% { opacity: 0.99; }
+            50% { opacity: 0.95; }
+            55% { opacity: 0.9; }
+            60% { opacity: 0.95; }
+            100% { opacity: 0.98; }
+        }
+
+        .crt-flicker {
+            animation: flicker 0.15s infinite;
         }
 
         /* Custom Scrollbar */
-        .scrollbar-thin::-webkit-scrollbar {
-            width: 6px;
+        .scrollbar-retro::-webkit-scrollbar {
+            width: 12px;
         }
-        .scrollbar-thin::-webkit-scrollbar-track {
-            background: transparent;
+        .scrollbar-retro::-webkit-scrollbar-track {
+            background: #1a1a1a;
+            border-left: 1px solid #451a03;
         }
-        .scrollbar-thin::-webkit-scrollbar-thumb {
-            background-color: #374151;
-            border-radius: 20px;
+        .scrollbar-retro::-webkit-scrollbar-thumb {
+            background-color: #fbbf24;
+            border: 2px solid #000;
         }
 
         .animate-fadeIn {
@@ -42,83 +88,83 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0; }
         }
+
+        /* Selection Color */
+        ::selection {
+            background: #fbbf24;
+            color: #000;
+        }
     </style>
 </head>
-<body class="min-h-screen bg-gray-950 text-gray-200 p-2 md:p-8 flex flex-col items-center justify-center selection:bg-green-900 selection:text-green-100 overflow-hidden">
+<body class="w-screen h-screen flex flex-col bg-black selection:bg-amber-500 selection:text-black">
 
-    <!-- Terminal Container -->
-    <div id="terminal-window" class="w-full max-w-4xl h-[85vh] bg-black/90 rounded-lg shadow-2xl border border-gray-800 overflow-hidden flex flex-col relative transition-all duration-300 ease-in-out">
+    <!-- CRT Overlay -->
+    <div class="scanlines"></div>
+
+    <!-- Main Container (Full Screen) -->
+    <div id="terminal-window" class="flex-1 flex flex-col relative w-full h-full crt-flicker z-10">
         
-        <!-- Title Bar -->
-        <div class="bg-gray-900 px-4 py-2 flex items-center justify-between border-b border-gray-800 shrink-0">
-            <div class="flex items-center gap-2">
-                <div class="flex gap-1.5">
-                    <div class="w-3 h-3 rounded-full bg-red-500/80 hover:bg-red-500 cursor-pointer"></div>
-                    <div class="w-3 h-3 rounded-full bg-yellow-500/80 hover:bg-yellow-500 cursor-pointer"></div>
-                    <div class="w-3 h-3 rounded-full bg-green-500/80 hover:bg-green-500 cursor-pointer"></div>
-                </div>
-                <div class="ml-3 text-xs text-gray-400 flex items-center gap-1.5">
-                    <i data-lucide="terminal" class="w-3 h-3"></i>
-                    <span>alvin@raymundo: ~</span>
-                </div>
+        <!-- Retro Status Bar -->
+        <div class="bg-amber-900/20 px-4 py-2 flex items-center justify-between border-b-2 border-amber-900/50 shrink-0">
+            <div class="flex items-center gap-4 text-amber-500/80 uppercase text-lg tracking-widest">
+                <span class="font-bold crt-text">SYS.OP: ALVIN_RAYMUNDO</span>
+                <span class="hidden md:inline">|</span>
+                <span class="hidden md:inline">MEM: 64KB OK</span>
             </div>
-            <div class="flex items-center gap-3 text-gray-500">
-                <button id="maximize-btn" class="hover:text-gray-300 focus:outline-none">
-                    <i data-lucide="maximize-2" class="w-3.5 h-3.5" id="maximize-icon"></i>
-                </button>
+            <div class="text-amber-500/60 text-lg">
+                <span id="clock">00:00:00</span>
             </div>
         </div>
 
         <!-- Terminal Output Area -->
-        <div id="terminal-output" class="flex-1 p-4 md:p-6 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent cursor-text">
+        <div id="terminal-output" class="flex-1 p-4 md:p-8 overflow-y-auto scrollbar-retro cursor-text text-xl md:text-2xl leading-relaxed">
             <!-- Content will be injected here via JS -->
             <div id="output-content"></div>
 
             <!-- Active Input Line -->
-            <div class="flex items-center flex-wrap mt-2">
-                <div class="flex items-center text-sm md:text-base flex-wrap mr-2">
-                    <span class="text-green-400 font-bold">guest@alvin.dev</span>
-                    <span class="text-white mx-1">:</span>
-                    <span class="text-blue-400 font-bold">~</span>
-                    <span class="text-white mx-1">$</span>
+            <div class="flex items-center flex-wrap mt-4">
+                <div class="flex items-center flex-wrap mr-3">
+                    <span class="text-amber-500 font-bold crt-text">GUEST</span>
+                    <span class="text-amber-700 mx-1">@</span>
+                    <span class="text-amber-500 font-bold crt-text">ALVIN.DEV</span>
+                    <span class="text-amber-700 mx-1">:</span>
+                    <span class="text-amber-300">~</span>
+                    <span class="text-amber-500 mx-1">$</span>
                 </div>
                 <div class="flex-1 relative group">
-                    <input type="text" id="command-input" class="bg-transparent border-none outline-none text-gray-100 w-full font-mono caret-transparent p-0 m-0" autocomplete="off" autofocus>
-                    <!-- Custom Blinking Cursor -->
-                    <span id="custom-cursor" class="absolute pointer-events-none bg-green-500 w-2.5 h-5 top-0 left-0 cursor-blink"></span>
+                    <input type="text" id="command-input" class="bg-transparent border-none outline-none text-amber-400 w-full font-inherit uppercase caret-transparent p-0 m-0 crt-text" autocomplete="off" autofocus>
+                    <!-- Block Cursor -->
+                    <span id="custom-cursor" class="absolute pointer-events-none bg-amber-500 text-black w-[1ch] h-[1.2em] top-0 left-0 cursor-blink opacity-75"></span>
                 </div>
             </div>
         </div>
 
-        <!-- Quick Actions Bar -->
-        <div class="bg-gray-900/95 border-t border-gray-800 p-2 md:p-3 shrink-0">
-            <div class="flex items-center gap-2 mb-2 text-xs text-gray-500 px-1">
-                <i data-lucide="command" class="w-3 h-3"></i>
-                <span>QUICK ACTIONS</span>
-            </div>
-            <div class="flex flex-wrap gap-2">
-                <button onclick="handleCommand('about')" class="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-xs md:text-sm text-green-400 font-mono transition-all active:scale-95">
-                    <i data-lucide="user" class="w-3.5 h-3.5"></i> About
+        <!-- Retro Function Keys Bar (Quick Actions) -->
+        <div class="bg-black border-t-2 border-amber-900/50 p-2 md:p-4 shrink-0">
+            <div class="flex flex-wrap gap-4 justify-center md:justify-start">
+                <button onclick="handleCommand('about')" class="group flex flex-col items-center gap-1 text-amber-600 hover:text-amber-400 transition-colors">
+                    <span class="bg-amber-900/30 px-2 py-0.5 border border-amber-800 rounded text-sm group-hover:bg-amber-800/50">[F1]</span>
+                    <span class="uppercase tracking-wider text-sm">About</span>
                 </button>
-                <button onclick="handleCommand('work')" class="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-xs md:text-sm text-green-400 font-mono transition-all active:scale-95">
-                    <i data-lucide="briefcase" class="w-3.5 h-3.5"></i> Work
+                <button onclick="handleCommand('work')" class="group flex flex-col items-center gap-1 text-amber-600 hover:text-amber-400 transition-colors">
+                    <span class="bg-amber-900/30 px-2 py-0.5 border border-amber-800 rounded text-sm group-hover:bg-amber-800/50">[F2]</span>
+                    <span class="uppercase tracking-wider text-sm">Work</span>
                 </button>
-                <button onclick="handleCommand('skills')" class="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-xs md:text-sm text-green-400 font-mono transition-all active:scale-95">
-                    <i data-lucide="code" class="w-3.5 h-3.5"></i> Skills
+                <button onclick="handleCommand('skills')" class="group flex flex-col items-center gap-1 text-amber-600 hover:text-amber-400 transition-colors">
+                    <span class="bg-amber-900/30 px-2 py-0.5 border border-amber-800 rounded text-sm group-hover:bg-amber-800/50">[F3]</span>
+                    <span class="uppercase tracking-wider text-sm">Skills</span>
                 </button>
-                <button onclick="handleCommand('contact')" class="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-xs md:text-sm text-green-400 font-mono transition-all active:scale-95">
-                    <i data-lucide="mail" class="w-3.5 h-3.5"></i> Contact
+                <button onclick="handleCommand('contact')" class="group flex flex-col items-center gap-1 text-amber-600 hover:text-amber-400 transition-colors">
+                    <span class="bg-amber-900/30 px-2 py-0.5 border border-amber-800 rounded text-sm group-hover:bg-amber-800/50">[F4]</span>
+                    <span class="uppercase tracking-wider text-sm">Contact</span>
                 </button>
-                <button onclick="handleCommand('clear')" class="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-xs md:text-sm text-green-400 font-mono transition-all active:scale-95">
-                    <i data-lucide="x" class="w-3.5 h-3.5"></i> Clear
+                <button onclick="handleCommand('clear')" class="group flex flex-col items-center gap-1 text-amber-600 hover:text-amber-400 transition-colors">
+                    <span class="bg-amber-900/30 px-2 py-0.5 border border-amber-800 rounded text-sm group-hover:bg-amber-800/50">[ESC]</span>
+                    <span class="uppercase tracking-wider text-sm">Clear</span>
                 </button>
             </div>
         </div>
 
-    </div>
-
-    <div class="mt-4 text-xs text-gray-600 font-mono hidden md:block">
-        Press [TAB] to autocomplete • Type 'help' for commands
     </div>
 
     <script>
@@ -138,8 +184,8 @@
                 {
                     company: "KMC Solutions (StarHub SG)",
                     role: "Social Media Specialist / Chat Support Specialist",
-                    period: "Feb 2024 - April 2025",
-                    location: "Taguig, Philippines",
+                    period: "FEB 2024 - APR 2025",
+                    location: "Taguig, PH",
                     details: [
                         "Managed high-volume virtual communication for StarHub SG.",
                         "Handled critical VA tasks: service plan inquiries, device support, and billing explanations.",
@@ -149,8 +195,8 @@
                 {
                     company: "Telus International Philippines",
                     role: "Tier III - Tech Support (G Suite Specialist)",
-                    period: "May 2018 - Aug 2022",
-                    location: "Taguig, Philippines",
+                    period: "MAY 2018 - AUG 2022",
+                    location: "Taguig, PH",
                     details: [
                         "Provided advanced virtual support for Google Workspace (G Suite).",
                         "Managed account setup, domain verification, and intricate spam management.",
@@ -160,8 +206,8 @@
                 {
                     company: "Trafilea",
                     role: "Social Media Moderator / E-commerce Support",
-                    period: "March 2018 - May 2018",
-                    location: "Guatemala (Remote)",
+                    period: "MAR 2018 - MAY 2018",
+                    location: "Remote (Guatemala)",
                     details: [
                         "Digital frontline for customer engagement on social media.",
                         "Contributed to sales funnel by providing product info leading to direct sales.",
@@ -171,8 +217,8 @@
                 {
                     company: "Teletech Holdings Inc.",
                     role: "Chat Support Associate / Frontline Support",
-                    period: "July 2014 - Dec 2017",
-                    location: "Mandaluyong, Philippines",
+                    period: "JUL 2014 - DEC 2017",
+                    location: "Mandaluyong, PH",
                     details: [
                         "Frontline virtual assistant for a leading US Telecom company.",
                         "Handled network, device, and system troubleshooting.",
@@ -191,13 +237,16 @@
         const outputEl = document.getElementById('output-content');
         const terminalOutput = document.getElementById('terminal-output');
         const customCursor = document.getElementById('custom-cursor');
-        const terminalWindow = document.getElementById('terminal-window');
-        const maximizeBtn = document.getElementById('maximize-btn');
-        const maximizeIcon = document.getElementById('maximize-icon');
 
-        let isMaximized = false;
+        // Clock Logic
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString('en-US', { hour12: false });
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
 
-        // Initialize Lucide icons
+        // Initialize Lucide icons (keeping them for semantic meaning even in monochrome)
         lucide.createIcons();
 
         // Focus management
@@ -206,8 +255,6 @@
         // Cursor logic
         function updateCursor() {
             const val = inputEl.value;
-            // Approximate width of a character in monospace font (ch unit is handy in CSS)
-            // But doing it via JS style left allows dynamic updates
             customCursor.style.left = `${val.length}ch`;
         }
 
@@ -231,30 +278,26 @@
             }
         });
 
-        // Maximize Toggle
-        maximizeBtn.addEventListener('click', () => {
-            isMaximized = !isMaximized;
-            if (isMaximized) {
-                terminalWindow.classList.remove('max-w-4xl', 'h-[85vh]', 'rounded-lg');
-                terminalWindow.classList.add('fixed', 'inset-0', 'z-50', 'rounded-none', 'h-screen');
-                maximizeIcon.setAttribute('data-lucide', 'minimize-2');
-            } else {
-                terminalWindow.classList.add('max-w-4xl', 'h-[85vh]', 'rounded-lg');
-                terminalWindow.classList.remove('fixed', 'inset-0', 'z-50', 'rounded-none', 'h-screen');
-                maximizeIcon.setAttribute('data-lucide', 'maximize-2');
-            }
-            lucide.createIcons();
+        // Function Key shortcuts
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'F1') { e.preventDefault(); handleCommand('about'); }
+            if (e.key === 'F2') { e.preventDefault(); handleCommand('work'); }
+            if (e.key === 'F3') { e.preventDefault(); handleCommand('skills'); }
+            if (e.key === 'F4') { e.preventDefault(); handleCommand('contact'); }
+            if (e.key === 'Escape') { e.preventDefault(); handleCommand('clear'); }
         });
 
         function createPromptHTML(cmd) {
             return `
-                <div class="mb-1">
-                    <div class="flex items-center text-sm md:text-base flex-wrap">
-                        <span class="text-green-400 font-bold">guest@alvin.dev</span>
-                        <span class="text-white mx-1">:</span>
-                        <span class="text-blue-400 font-bold">~</span>
-                        <span class="text-white mx-1">$</span>
-                        <span class="ml-2 text-gray-100">${cmd}</span>
+                <div class="mb-2">
+                    <div class="flex items-center flex-wrap">
+                        <span class="text-amber-500 font-bold crt-text">GUEST</span>
+                        <span class="text-amber-700 mx-1">@</span>
+                        <span class="text-amber-500 font-bold crt-text">ALVIN.DEV</span>
+                        <span class="text-amber-700 mx-1">:</span>
+                        <span class="text-amber-300">~</span>
+                        <span class="text-amber-500 mx-1">$</span>
+                        <span class="ml-2 text-amber-100 uppercase">${cmd}</span>
                     </div>
                 </div>
             `;
@@ -262,11 +305,11 @@
 
         function createSectionBlock(title, contentHTML) {
             return `
-                <div class="mb-6 animate-fadeIn">
-                    <h3 class="text-yellow-400 font-bold text-lg mb-2 border-b border-gray-700 pb-1 w-full md:w-fit uppercase tracking-wider">
-                        ${title}
+                <div class="mb-12 animate-fadeIn">
+                    <h3 class="text-amber-400 font-bold text-2xl mb-4 border-b-2 border-amber-900/50 pb-2 w-full uppercase tracking-widest crt-text">
+                        [ ${title} ]
                     </h3>
-                    <div class="text-gray-300 space-y-2">
+                    <div class="text-amber-200/90 space-y-2 crt-text">
                         ${contentHTML}
                     </div>
                 </div>
@@ -287,22 +330,20 @@
 
             switch (trimmedCmd) {
                 case 'init_load':
-                    // Just run banner and help silently
                     handleCommand('banner');
                     handleCommand('help');
                     return;
 
                 case 'help':
                     responseHTML = `
-                        <div class="my-2 animate-fadeIn">
-                            <div class="text-gray-300 mb-2">Available commands:</div>
-                            <div class="grid grid-cols-1 gap-1">
-                                <div class="flex flex-col md:flex-row md:items-center"><span class="text-yellow-300 font-bold w-32">about</span><span class="text-gray-400">Who am I? Summary & Contact</span></div>
-                                <div class="flex flex-col md:flex-row md:items-center"><span class="text-yellow-300 font-bold w-32">work</span><span class="text-gray-400">Professional Experience</span></div>
-                                <div class="flex flex-col md:flex-row md:items-center"><span class="text-yellow-300 font-bold w-32">skills</span><span class="text-gray-400">Technical & Admin Skills</span></div>
-                                <div class="flex flex-col md:flex-row md:items-center"><span class="text-yellow-300 font-bold w-32">contact</span><span class="text-gray-400">Get in touch</span></div>
-                                <div class="flex flex-col md:flex-row md:items-center"><span class="text-yellow-300 font-bold w-32">all</span><span class="text-gray-400">Display full resume</span></div>
-                                <div class="flex flex-col md:flex-row md:items-center"><span class="text-yellow-300 font-bold w-32">clear</span><span class="text-gray-400">Clear the terminal</span></div>
+                        <div class="my-6 animate-fadeIn p-4 border-2 border-dashed border-amber-900/50 bg-amber-950/20">
+                            <div class="text-amber-400 mb-4 uppercase tracking-widest border-b border-amber-900/50 pb-1 w-fit">Available commands:</div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><span class="text-amber-300 font-bold mr-4">ABOUT</span><span class="text-amber-600">// SUMMARY & CONTACT</span></div>
+                                <div><span class="text-amber-300 font-bold mr-4">WORK</span><span class="text-amber-600">// EXP. LOGS</span></div>
+                                <div><span class="text-amber-300 font-bold mr-4">SKILLS</span><span class="text-amber-600">// TECH SPECS</span></div>
+                                <div><span class="text-amber-300 font-bold mr-4">CONTACT</span><span class="text-amber-600">// COMM. CHANNELS</span></div>
+                                <div><span class="text-amber-300 font-bold mr-4">CLEAR</span><span class="text-amber-600">// CLS SCREEN</span></div>
                             </div>
                         </div>
                     `;
@@ -310,72 +351,73 @@
 
                 case 'banner':
                     responseHTML = `
-                        <div class="mb-4 leading-none text-[10px] md:text-xs text-green-500 font-mono whitespace-pre overflow-x-hidden animate-fadeIn">
+                        <div class="mb-8 leading-none text-xs md:text-sm text-amber-500 font-bold whitespace-pre overflow-x-hidden animate-fadeIn select-none opacity-80">
     ___    __       _       
    /   |  / /_   __(_)___  
   / /| | / /| | / / / __ \\ 
  / ___ |/ / | |/ / / / / / 
 /_/  |_/_/  |___/_/_/ /_/  
                            
-Automated Solutions & Virtual Assistance v2.5.0
+<span class="text-amber-700">SYSTEM READY...</span>
+<span class="text-amber-700">LOADING VIRTUAL ASSISTANT MODULE v2.5.0...</span>
                         </div>
                     `;
                     break;
 
                 case 'about':
                 case 'summary':
-                    responseHTML = createSectionBlock("Summary", `<p class="leading-relaxed">${RESUME_DATA.header.summary}</p>`);
+                    responseHTML = createSectionBlock("Summary", `<p class="leading-relaxed text-xl">${RESUME_DATA.header.summary}</p>`);
                     break;
 
                 case 'work':
                 case 'experience':
                     const workHTML = RESUME_DATA.experience.map(job => `
-                        <div class="mb-6 last:mb-0">
-                            <div class="flex flex-col md:flex-row md:justify-between md:items-baseline text-green-300">
-                                <span class="font-bold text-base">${job.role}</span>
-                                <span class="text-sm text-gray-500 italic">${job.period}</span>
+                        <div class="mb-8 last:mb-0 border-l-4 border-amber-900/50 pl-6 hover:border-amber-500/50 transition-colors">
+                            <div class="flex flex-col md:flex-row md:justify-between md:items-baseline text-amber-400 mb-2">
+                                <span class="font-bold text-xl uppercase">${job.role}</span>
+                                <span class="text-lg text-amber-700 font-bold">[ ${job.period} ]</span>
                             </div>
-                            <div class="text-blue-300 text-sm mb-2">${job.company} — ${job.location}</div>
-                            <ul class="list-disc list-outside ml-4 text-gray-300 space-y-1">
-                                ${job.details.map(d => `<li>${d}</li>`).join('')}
+                            <div class="text-amber-600 text-lg mb-3 uppercase tracking-wider">${job.company} — ${job.location}</div>
+                            <ul class="list-none space-y-2">
+                                ${job.details.map(d => `<li class="flex items-start"><span class="mr-2 text-amber-500">></span> ${d}</li>`).join('')}
                             </ul>
                         </div>
                     `).join('');
-                    responseHTML = createSectionBlock("Work Experience", workHTML);
+                    responseHTML = createSectionBlock("Work Log", workHTML);
                     break;
 
                 case 'skills':
                     const skillsHTML = `
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <h4 class="text-green-400 font-bold mb-2 flex items-center gap-2">
-                                    <i data-lucide="code" class="w-4 h-4"></i> Development & Infra
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div class="border border-amber-900/50 p-4 bg-amber-950/20">
+                                <h4 class="text-amber-400 font-bold mb-4 uppercase flex items-center gap-2 border-b border-amber-900/50 pb-2">
+                                    :: DEVELOPMENT ::
                                 </h4>
-                                <ul class="list-disc ml-4 text-gray-300">
-                                    ${RESUME_DATA.skills.technical.map(s => `<li>${s}</li>`).join('')}
+                                <ul class="space-y-2 text-amber-200">
+                                    ${RESUME_DATA.skills.technical.map(s => `<li class="flex items-center"><span class="w-2 h-2 bg-amber-600 mr-3"></span>${s}</li>`).join('')}
                                 </ul>
                             </div>
-                            <div>
-                                <h4 class="text-green-400 font-bold mb-2 flex items-center gap-2">
-                                    <i data-lucide="shield" class="w-4 h-4"></i> Admin & Quality
+                            <div class="border border-amber-900/50 p-4 bg-amber-950/20">
+                                <h4 class="text-amber-400 font-bold mb-4 uppercase flex items-center gap-2 border-b border-amber-900/50 pb-2">
+                                    :: ADMIN_TOOLS ::
                                 </h4>
-                                <ul class="list-disc ml-4 text-gray-300">
-                                    ${RESUME_DATA.skills.administrative.map(s => `<li>${s}</li>`).join('')}
+                                <ul class="space-y-2 text-amber-200">
+                                    ${RESUME_DATA.skills.administrative.map(s => `<li class="flex items-center"><span class="w-2 h-2 bg-amber-600 mr-3"></span>${s}</li>`).join('')}
                                 </ul>
                             </div>
                         </div>
                     `;
-                    responseHTML = createSectionBlock("Technical Proficiency", skillsHTML);
+                    responseHTML = createSectionBlock("System Capabilities", skillsHTML);
                     break;
 
                 case 'contact':
-                    responseHTML = createSectionBlock("Contact Information", `
-                        <div class="flex flex-col gap-2">
-                            <a href="mailto:${RESUME_DATA.header.contact.email}" class="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors w-fit">
-                                <i data-lucide="mail" class="w-4 h-4"></i> ${RESUME_DATA.header.contact.email}
+                    responseHTML = createSectionBlock("Comm. Channels", `
+                        <div class="flex flex-col gap-4 text-xl">
+                            <a href="mailto:${RESUME_DATA.header.contact.email}" class="flex items-center gap-4 text-amber-400 hover:text-amber-200 hover:underline transition-colors w-fit group">
+                                <span class="text-amber-700 group-hover:text-amber-500">EMAIL ::</span> ${RESUME_DATA.header.contact.email}
                             </a>
-                            <span class="flex items-center gap-2 text-gray-300">
-                                <i data-lucide="briefcase" class="w-4 h-4"></i> ${RESUME_DATA.header.contact.phone}
+                            <span class="flex items-center gap-4 text-amber-400 group">
+                                <span class="text-amber-700">PHONE ::</span> ${RESUME_DATA.header.contact.phone}
                             </span>
                         </div>
                     `);
@@ -393,16 +435,16 @@ Automated Solutions & Virtual Assistance v2.5.0
                     return;
 
                 case 'sudo':
-                    responseHTML = `<div class="text-red-500 font-bold mb-2 animate-fadeIn">Permission denied: You are not an administrator. Nice try.</div>`;
+                    responseHTML = `<div class="text-red-500 font-bold mb-2 animate-fadeIn uppercase crt-text">ACCESS DENIED. THIS INCIDENT WILL BE REPORTED.</div>`;
                     break;
                 
                 case 'ls':
                     responseHTML = `
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-blue-300 mb-2 animate-fadeIn">
-                            <span>resume.pdf</span>
-                            <span>secrets.txt</span>
-                            <span>portfolio_v1/</span>
-                            <span>automation_scripts/</span>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-amber-300 mb-2 animate-fadeIn uppercase">
+                            <span>resume_2025.pdf</span>
+                            <span>passwords.txt</span>
+                            <span>config.sys</span>
+                            <span>autoexec.bat</span>
                         </div>
                     `;
                     break;
@@ -412,8 +454,8 @@ Automated Solutions & Virtual Assistance v2.5.0
 
                 default:
                     responseHTML = `
-                        <div class="text-red-400 mb-2 animate-fadeIn">
-                            Command not found: '${trimmedCmd}'. Type <span class="text-yellow-300 cursor-pointer underline" onclick="handleCommand('help')">help</span> for a list of commands.
+                        <div class="text-amber-700 mb-2 animate-fadeIn uppercase">
+                            ERR: UNKNOWN COMMAND '${trimmedCmd}'. TYPE <span class="text-amber-400 cursor-pointer underline hover:text-amber-200" onclick="handleCommand('help')">HELP</span>.
                         </div>
                     `;
             }
